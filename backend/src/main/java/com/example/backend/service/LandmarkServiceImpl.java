@@ -5,14 +5,17 @@ import com.example.backend.apiPayload.exception.handler.TempHandler;
 import com.example.backend.dto.LandmarkResponseDTO.LandmarkFindDTO;
 import com.example.backend.dto.LandmarkResponseDTO.LandmarkMapDTO;
 import com.example.backend.dto.LandmarkResponseDTO.LandmarkPreViewDTO;
+import com.example.backend.model.Festival;
 import com.example.backend.model.Interest;
 import com.example.backend.model.Landmark;
 import com.example.backend.model.Stamp;
 import com.example.backend.model.UsersEntity;
 import com.example.backend.model.enums.Category;
+import com.example.backend.repository.FestivalRepository;
 import com.example.backend.repository.LandmarkRepository;
 import com.example.backend.repository.StampRepository;
-import com.example.backend.repository.UsersRepository;
+import com.example.backend.repository.UserRepository;
+
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -28,13 +31,14 @@ import org.springframework.web.client.RestTemplate;
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
+import org.w3c.dom.Element;
 
 @Service
 @RequiredArgsConstructor
 public class LandmarkServiceImpl implements LandmarkService {
 
   private final LandmarkRepository landmarkRepository;
-  private final UsersRepository usersRepository;
+  private final UserRepository userRepository;
   private final StampRepository stampRepository;
 
   private RestTemplate createRestTemplate() {
@@ -159,7 +163,7 @@ public class LandmarkServiceImpl implements LandmarkService {
 
   @Override
   public List<LandmarkMapDTO> getMapLandmarks(long userId) {
-    UsersEntity user = usersRepository.findById(userId).orElseThrow(() -> new TempHandler(ErrorStatus.USER_NOT_FOUND));
+    UsersEntity user = userRepository.findById(userId).orElseThrow(() -> new TempHandler(ErrorStatus.USER_NOT_FOUND));
 
     List<Category> userCategories = user.getInterests().stream()
         .map(Interest::getCategory)
@@ -178,7 +182,7 @@ public class LandmarkServiceImpl implements LandmarkService {
 
   @Override
   public void findLandmark(Long landmarkId, long userId) {
-    UsersEntity user = usersRepository.findById(userId).orElseThrow(() -> new TempHandler(ErrorStatus.USER_NOT_FOUND));
+    UsersEntity user = userRepository.findById(userId).orElseThrow(() -> new TempHandler(ErrorStatus.USER_NOT_FOUND));
     Landmark landmark = landmarkRepository.findById(landmarkId).orElseThrow(() -> new TempHandler(ErrorStatus.LANDMARK_NOT_FOUND));
     stampRepository.findByUserAndLandmark(user, landmark)
         .ifPresent(mb -> { throw new TempHandler(ErrorStatus.ALREADY_FIND_LANDMARK); });
@@ -209,15 +213,15 @@ public class LandmarkServiceImpl implements LandmarkService {
     switch (category.toLowerCase()) {
       case "nature":
         return Arrays.asList(
-            Category.MOUNTAIN, Category.BEACH, Category.TRAIL, Category.ARBORETUM, Category.PARK, Category.SCENERY
+            Category.MOUNTAIN, Category.BEACH_ISLAND, Category.GARDEN, Category.TRAIL, Category.WATERFALL, Category.DRIVE
         );
-      case "history":
+      case "knowledge":
         return Arrays.asList(
-            Category.MUSEUM, Category.PALACE, Category.HISTORIC_SITE, Category.FOLK_VILLAGE, Category.TRADITIONAL_EXPERIENCE
+            Category.HISTORY, Category.ECOLOGY_SCIENCE, Category.MYTH_LEGEND, Category.STORY_FIGURES
         );
       case "culture":
         return Arrays.asList(
-            Category.LOCAL_CULTURE, Category.HUMANITIES, Category.ART_GALLERY, Category.RELIGIOUS_SITE, Category.STORY
+            Category.EXHIBITION, Category.ART, Category.CRAFT_EXPERIENCE, Category.ACTIVITY, Category.THEME_PARK, Category.TASTE, Category.RELIGION
         );
       default:
         throw new TempHandler(ErrorStatus.INVALID_CATEGORY);

@@ -1,10 +1,12 @@
 package com.example.backend.controller;
 
 import com.example.backend.apiPayload.ApiResponse;
+import com.example.backend.dto.KakaoDto;
 import com.example.backend.dto.LandmarkResponseDTO.LandmarkFindDTO;
 import com.example.backend.dto.LandmarkResponseDTO.LandmarkMapDTO;
 import com.example.backend.dto.LandmarkResponseDTO.LandmarkPreViewDTO;
 import com.example.backend.model.enums.Category;
+import com.example.backend.service.KakaoService;
 import com.example.backend.service.LandmarkService;
 import io.swagger.v3.oas.annotations.Operation;
 import java.util.List;
@@ -22,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class LandmarkController {
 
   private final LandmarkService landmarkService;
+  private final KakaoService kakaoService;
 
   @GetMapping("/fetch-landmarks")
   public String fetchLandmarks() {
@@ -36,7 +39,7 @@ public class LandmarkController {
     return ApiResponse.onSuccess(result);
   }
 
-  @Operation(summary = "랜드마크 목록 조회 API", description = "랜드마크 리스트 페이지에서의 목록 조회 API입니다. category(nature, history, culture)")
+  @Operation(summary = "랜드마크 목록 조회 API", description = "랜드마크 리스트 페이지에서의 목록 조회 API입니다. category(nature, knowledge, culture)")
   @GetMapping("")
   public ApiResponse<List<LandmarkPreViewDTO>> getLandmarks(@RequestParam(name = "category", required = false) String category,
       @RequestParam(name = "interest", required = false) List<Category> interests) {
@@ -65,17 +68,19 @@ public class LandmarkController {
     return ApiResponse.onSuccess(result);
   }
 
-  @Operation(summary = "지도 랜드마크 조회 API", description = "지도에서의 랜드마크를 조회하는 기능입니다. 로그인된 유저의 관심사 정보를 통해 랜드마크를 반환합니다")
+  @Operation(summary = "지도 랜드마크 조회 API", description = "지도에서의 랜드마크를 조회하는 기능입니다. 로그인된 유저의 관심사 정보를 통해 랜드마크를 반환합니다. userId에 토큰을 입력해주세요.")
   @GetMapping("/map")
   public ApiResponse<List<LandmarkMapDTO>> getMapLandmarks(@RequestParam String userId) {
-    List<LandmarkMapDTO> result = landmarkService.getMapLandmarks(Long.parseLong(userId));
+    KakaoDto kakaoDto = kakaoService.getUserInfo(userId);
+    List<LandmarkMapDTO> result = landmarkService.getMapLandmarks(kakaoDto.getId());
     return ApiResponse.onSuccess(result);
   }
 
-  @Operation(summary = "랜드마크 발견 하기 API", description = "랜드마크를 발견하는 기능입니다.")
+  @Operation(summary = "랜드마크 발견 하기 API", description = "랜드마크를 발견하는 기능입니다. userId에 토큰을 입력해주세요.")
   @PostMapping("/find/{landmarkId}")
   public ApiResponse<Long> findLandmark(@PathVariable("landmarkId") Long landmarkId, @RequestParam String userId) {
-    landmarkService.findLandmark(landmarkId, Long.parseLong(userId));
+    KakaoDto kakaoDto = kakaoService.getUserInfo(userId);
+    landmarkService.findLandmark(landmarkId, kakaoDto.getId());
     return ApiResponse.onSuccess(landmarkId);
   }
 
