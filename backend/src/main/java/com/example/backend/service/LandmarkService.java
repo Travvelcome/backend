@@ -26,4 +26,6 @@ public interface LandmarkService {
   void findLandmark(Long landmarkId, long userId);
 
   List<LandmarkRecommendDTO> getRecommendedLandmarks(double mapX, double mapY, long userId);
+
+  List<LandmarkMapDTO> getMapCategoryLandmarks(String category, long userId);
 }
