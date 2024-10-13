@@ -77,6 +77,14 @@ public class LandmarkController {
     return ApiResponse.onSuccess(result);
   }
 
+  @Operation(summary = "지도 카테고리 랜드마크 조회 API", description = "지도에서의 랜드마크를 카테고리별로 조회하는 기능입니다. userId에 토큰을 입력해주세요.  category(nature, knowledge, culture)")
+  @GetMapping("/map/category")
+  public ApiResponse<List<LandmarkMapDTO>> getMapCategoryLandmarks(@RequestParam(name = "category", required = false) String category, @RequestParam String userId) {
+    KakaoDto kakaoDto = kakaoService.getUserInfo(userId);
+    List<LandmarkMapDTO> result = landmarkService.getMapCategoryLandmarks(category, kakaoDto.getId());
+    return ApiResponse.onSuccess(result);
+  }
+
   @Operation(summary = "랜드마크 발견 하기 API", description = "랜드마크를 발견하는 기능입니다. userId에 토큰을 입력해주세요.")
   @PostMapping("/find/{landmarkId}")
   public ApiResponse<Long> findLandmark(@PathVariable("landmarkId") Long landmarkId, @RequestParam String userId) {
