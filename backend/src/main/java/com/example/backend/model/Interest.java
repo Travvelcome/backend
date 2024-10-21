@@ -1,8 +1,11 @@
 package com.example.backend.model;
 
 import com.example.backend.model.enums.Category;
+import com.example.backend.model.enums.Tag;
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.util.List;
 
 @Entity
 @Builder

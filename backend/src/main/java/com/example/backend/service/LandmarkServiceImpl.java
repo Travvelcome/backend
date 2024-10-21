@@ -5,6 +5,7 @@ import com.example.backend.apiPayload.exception.handler.TempHandler;
 import com.example.backend.dto.LandmarkResponseDTO.LandmarkFindDTO;
 import com.example.backend.dto.LandmarkResponseDTO.LandmarkMapDTO;
 import com.example.backend.dto.LandmarkResponseDTO.LandmarkPreViewDTO;
+import com.example.backend.dto.LandmarkResponseDTO.LandmarkRecommendDTO;
 import com.example.backend.model.Festival;
 import com.example.backend.model.Interest;
 import com.example.backend.model.Landmark;
@@ -192,6 +193,83 @@ public class LandmarkServiceImpl implements LandmarkService {
         .landmark(landmark)
         .build();
     stampRepository.save(stamp);
+  }
+
+  @Override
+  public List<LandmarkRecommendDTO> getRecommendedLandmarks(double mapX, double mapY, long userId) {
+    UsersEntity user = userRepository.findById(userId).orElseThrow(() -> new TempHandler(ErrorStatus.USER_NOT_FOUND));
+
+    List<Category> userCategories = user.getInterests().stream()
+        .map(Interest::getCategory)
+        .collect(Collectors.toList());
+
+    double radius = 1.0; // 조회할 반경 (km)
+
+    List<Landmark> landmarks = landmarkRepository.findByCategoriesIn(userCategories).stream()
+        .filter(landmark -> calculateDistance(mapX, mapY, landmark.getMapX(), landmark.getMapY()) <= radius)
+        .collect(Collectors.toList());;
+
+    return landmarks.stream()
+        .map(landmark -> LandmarkRecommendDTO.builder()
+            .landmarkId(landmark.getId())
+            .title(landmark.getTitle())
+            .categories(landmark.getCategories())
+            .imageUrl(landmark.getImageUrl())
+            .distance(calculateDistance(mapX, mapY, landmark.getMapX(), landmark.getMapY()))
+            .build())
+        .collect(Collectors.toList());
+  }
+
+  @Override
+  public List<LandmarkMapDTO> getMapCategoryLandmarks(String category, long userId) {
+    // 유저 ID로 유저를 찾고, 없으면 예외 처리
+    UsersEntity user = userRepository.findById(userId)
+        .orElseThrow(() -> new TempHandler(ErrorStatus.USER_NOT_FOUND));
+
+    // 유저가 관심 있는 카테고리 리스트 가져오기
+    List<Category> userCategories = user.getInterests().stream()
+        .map(Interest::getCategory)
+        .collect(Collectors.toList());
+
+    List<Category> categoriesToFilter = new ArrayList<>();
+
+    // 메인 카테고리가 있으면 해당 카테고리와 관련된 하위 카테고리 가져오기
+    if (category != null) {
+      categoriesToFilter = getCategoriesByMainCategory(category);
+    }
+
+    List<Landmark> landmarkList = new ArrayList<>();
+
+    // 메인 카테고리와 유저의 관심 카테고리를 모두 고려해서 랜드마크 필터링
+    if (!categoriesToFilter.isEmpty()) {
+      // 선택한 카테고리와 유저의 관심 카테고리가 모두 일치하는 랜드마크들 필터링
+      landmarkList = landmarkRepository.findByCategoriesIn(categoriesToFilter).stream()
+          .filter(landmark -> landmark.getCategories().stream().anyMatch(userCategories::contains))
+          .collect(Collectors.toList());
+    } else {
+      // 카테고리가 지정되지 않은 경우, 유저의 관심 카테고리만으로 필터링
+      landmarkList = landmarkRepository.findAll().stream()
+          .filter(landmark -> landmark.getCategories().stream().anyMatch(userCategories::contains))
+          .collect(Collectors.toList());
+    }
+
+    // 필터링된 랜드마크들을 LandmarkMapDTO로 변환 (builder 사용)
+    return landmarkList.stream()
+        .map(landmark -> LandmarkMapDTO.builder()
+            .landmarkId(landmark.getId())
+            .mapX(landmark.getMapX())
+            .mapY(landmark.getMapY())
+            .build())
+        .collect(Collectors.toList());
+  }
+
+  // 나의 관심사와 landmark의 관심사가 일치하면 category 출력.
+  @Override
+  public List<String> findCategories(List<String> landmarkCategories, List<String> categoryList) {
+    // landmarkCategories와 categoryList를 비교해서 공통된 값을 찾음
+    return landmarkCategories.stream()
+            .filter(categoryList::contains) // categoryList에 있는 항목만 필터링
+            .collect(Collectors.toList()); // 리스트로 반환
   }
 
   // Haversine 공식을 사용한 거리 계산 (단위: km)

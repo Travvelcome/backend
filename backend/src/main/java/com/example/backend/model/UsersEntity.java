@@ -25,11 +25,20 @@ public class UsersEntity {
     private String thumbnailImageUrl;
     private String profileImageUrl;
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+//    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+//    private List<Interest> interests;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     private List<Interest> interests;
 
     public UsersEntity(Long id, String nickname) {
         this.id = id;
+        this.nickname = nickname;
+    }
+
+    public UsersEntity(Long id, String email, String nickname) {
+        this.id = id;
+        this.email = email;
         this.nickname = nickname;
     }
 }
